@@ -19,7 +19,7 @@ package com.hortonworks.spark.atlas.sql
 
 import java.nio.file.Files
 
-import com.hortonworks.spark.atlas.sql.testhelper.{AtlasQueryExecutionListener, CreateEntitiesTrackingAtlasClient, DirectProcessSparkExecutionPlanProcessor}
+import com.hortonworks.spark.atlas.sql.testhelper.{AtlasQueryExecutionListener, EntitiesModificationTrackingAtlasClient, DirectProcessSparkExecutionPlanProcessor}
 import com.hortonworks.spark.atlas.types.external.KAFKA_TOPIC_STRING
 import com.hortonworks.spark.atlas.types.metadata
 import com.hortonworks.spark.atlas.utils.SparkUtils
@@ -38,14 +38,14 @@ class SparkExecutionPlanProcessorForStreamingQuerySuite extends StreamTest {
 
   val atlasClientConf: AtlasClientConf = new AtlasClientConf()
     .set(AtlasClientConf.CHECK_MODEL_IN_START.key, "false")
-  var atlasClient: CreateEntitiesTrackingAtlasClient = _
+  var atlasClient: EntitiesModificationTrackingAtlasClient = _
   val testHelperQueryListener = new AtlasQueryExecutionListener()
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     testUtils = new KafkaTestUtils(brokerProps)
     testUtils.setup()
-    atlasClient = new CreateEntitiesTrackingAtlasClient()
+    atlasClient = new EntitiesModificationTrackingAtlasClient()
     testHelperQueryListener.clear()
     spark.listenerManager.register(testHelperQueryListener)
   }

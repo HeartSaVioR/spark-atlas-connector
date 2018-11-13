@@ -24,8 +24,16 @@ import org.apache.atlas.model.typedef.AtlasTypesDef
 
 import scala.collection.mutable
 
-class CreateEntitiesTrackingAtlasClient extends AtlasClient {
+class EntitiesModificationTrackingAtlasClient extends AtlasClient {
   val createdEntities = new mutable.ListBuffer[AtlasEntity]()
+  val updatedEntities = new mutable.ListBuffer[(String, String, AtlasEntity)]()
+  val deletedEntities = new mutable.ListBuffer[(String, String)]()
+
+  def clear(): Unit = {
+    createdEntities.clear()
+    updatedEntities.clear()
+    deletedEntities.clear()
+  }
 
   override def createAtlasTypeDefs(typeDefs: AtlasTypesDef): Unit = {}
 
@@ -40,8 +48,12 @@ class CreateEntitiesTrackingAtlasClient extends AtlasClient {
   }
 
   override protected def doDeleteEntityWithUniqueAttr(entityType: String,
-                                                      attribute: String): Unit = {}
+                                                      attribute: String): Unit = {
+    deletedEntities += ((entityType, attribute))
+  }
 
   override protected def doUpdateEntityWithUniqueAttr(entityType: String, attribute: String,
-                                                      entity: AtlasEntity): Unit = {}
+                                                      entity: AtlasEntity): Unit = {
+    updatedEntities += ((entityType, attribute, entity))
+  }
 }
