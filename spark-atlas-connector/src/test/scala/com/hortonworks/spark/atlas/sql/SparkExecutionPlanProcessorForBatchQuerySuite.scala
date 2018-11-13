@@ -21,7 +21,7 @@ import java.io.{BufferedWriter, FileWriter}
 import java.nio.file.{Files, Path}
 import java.util.Locale
 
-import com.hortonworks.spark.atlas.sql.testhelper.{AtlasQueryExecutionListener, CreateEntitiesTrackingAtlasClient, DirectProcessSparkExecutionPlanProcessor}
+import com.hortonworks.spark.atlas.sql.testhelper.{AtlasQueryExecutionListener, EntitiesModificationTrackingAtlasClient, DirectProcessSparkExecutionPlanProcessor}
 import com.hortonworks.spark.atlas.types.{external, metadata}
 import com.hortonworks.spark.atlas.utils.SparkUtils
 import com.hortonworks.spark.atlas.AtlasClientConf
@@ -33,12 +33,12 @@ class SparkExecutionPlanProcessorForBatchQuerySuite extends StreamTest {
 
   val atlasClientConf: AtlasClientConf = new AtlasClientConf()
     .set(AtlasClientConf.CHECK_MODEL_IN_START.key, "false")
-  var atlasClient: CreateEntitiesTrackingAtlasClient = _
+  var atlasClient: EntitiesModificationTrackingAtlasClient = _
   val testHelperQueryListener = new AtlasQueryExecutionListener()
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    atlasClient = new CreateEntitiesTrackingAtlasClient()
+    atlasClient = new EntitiesModificationTrackingAtlasClient()
     testHelperQueryListener.clear()
     spark.listenerManager.register(testHelperQueryListener)
   }

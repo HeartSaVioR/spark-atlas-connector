@@ -144,7 +144,14 @@ class SparkCatalogEventProcessor(
             atlasClient.createEntities(schemaEntities)
 
             val tableEntity = new AtlasEntity(tableType(isHiveTbl))
-            tableEntity.setAttribute("spark_schema", schemaEntities.asJava)
+
+            // attribute name for columns are different between Spark table and Hive table
+            if (isHiveTbl) {
+              tableEntity.setAttribute("columns", schemaEntities.asJava)
+            } else {
+              tableEntity.setAttribute("spark_schema", schemaEntities.asJava)
+            }
+
             atlasClient.updateEntityWithUniqueAttr(
               tableType(isHiveTbl),
               tableUniqueAttribute(db, table, isHiveTbl),
