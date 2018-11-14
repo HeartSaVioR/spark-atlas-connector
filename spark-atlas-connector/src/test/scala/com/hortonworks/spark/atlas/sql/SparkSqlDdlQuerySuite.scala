@@ -18,7 +18,7 @@
 package com.hortonworks.spark.atlas.sql
 
 import com.hortonworks.spark.atlas.sql.testhelper.{AtlasCatalogEventListener, EntitiesModificationTrackingAtlasClient}
-import com.hortonworks.spark.atlas.types.metadata
+import com.hortonworks.spark.atlas.types.external
 import com.hortonworks.spark.atlas.{AtlasClient, AtlasClientConf, WithHiveSupport}
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalogEvent
 import org.scalatest.FunSuite
@@ -61,7 +61,7 @@ class SparkSqlDdlQuerySuite extends FunSuite with WithHiveSupport {
     catalogEvents.foreach(catalogProcessor.process)
 
     // assert for 'create table' operation
-    val tablesCreated = atlasClient.createdEntities.filter(_.getTypeName == metadata.TABLE_TYPE_STRING)
+    val tablesCreated = atlasClient.createdEntities.filter(_.getTypeName == external.HIVE_TABLE_TYPE_STRING)
     assert(tablesCreated.size === 1)
     val tableCreated = tablesCreated.head
     assert(getStringAttribute(tableCreated, "qualifiedName") === s"default.test1@primary")
@@ -94,7 +94,7 @@ class SparkSqlDdlQuerySuite extends FunSuite with WithHiveSupport {
     val expectedType = "integer"
 
     assert(createdEntities.size === 2)
-    assert(createdEntities.forall(_.getTypeName == metadata.COLUMN_TYPE_STRING))
+    assert(createdEntities.forall(_.getTypeName == external.HIVE_COLUMN_TYPE_STRING))
     assert(createdEntities.forall(getStringAttribute(_, "type") == expectedType))
     assert(createdEntities.map(getStringAttribute(_, "name")).toSet == expectedColumnNames)
     assert(createdEntities.map(getStringAttribute(_, "qualifiedName")).toSet ==
