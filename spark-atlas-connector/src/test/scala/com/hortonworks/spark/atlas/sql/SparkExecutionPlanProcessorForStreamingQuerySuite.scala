@@ -26,10 +26,8 @@ import com.hortonworks.spark.atlas.utils.SparkUtils
 import com.hortonworks.spark.atlas.AtlasClientConf
 import org.apache.atlas.model.instance.AtlasEntity
 import org.apache.spark.sql.kafka010.KafkaTestUtils
-import org.apache.spark.sql.kafka010.atlas.{KafkaHarvester, KafkaTopicInformation}
+import org.apache.spark.sql.kafka010.atlas.KafkaTopicInformation
 import org.apache.spark.sql.streaming.{StreamTest, StreamingQuery}
-
-import scala.collection.convert.Wrappers.SeqWrapper
 
 class SparkExecutionPlanProcessorForStreamingQuerySuite extends StreamTest {
   import com.hortonworks.spark.atlas.sql.testhelper.AtlasEntityReadHelper._
@@ -115,9 +113,21 @@ class SparkExecutionPlanProcessorForStreamingQuerySuite extends StreamTest {
       sendMessages(topicsToRead2)
       waitForBatchCompleted(query, testHelperQueryListener)
 
-      val queryDetails = testHelperQueryListener.queryDetails
-      queryDetails.foreach(planProcessor.process)
-      val entitySet = atlasClient.createdEntities.toSet
+      import org.scalatest.time.SpanSugar._
+      var queryDetails: Seq[QueryDetail] = null
+      var entitySet: Set[AtlasEntity] = null
+      eventually(timeout(10.seconds)) {
+        queryDetails = testHelperQueryListener.queryDetails
+        queryDetails.foreach(planProcessor.process)
+
+        val createdEntities = atlasClient.createdEntities
+        logInfo(s"Count of created entities (with duplication): ${createdEntities.size}")
+        entitySet = getUniqueEntities(createdEntities)
+        logInfo(s"Count of created entities after deduplication: ${entitySet.size}")
+
+        // spark_process, topic to write, topics to read group 1 and 2
+        assert(entitySet.size == topicsToRead1.size + topicsToRead2.size + 2)
+      }
 
       val topicsToRead1WithClusterInfo = topicsToRead1.map { tp =>
         KafkaTopicInformation(tp, None)
@@ -205,5 +215,25 @@ class SparkExecutionPlanProcessorForStreamingQuerySuite extends StreamTest {
     expectedMap.foreach { case (key, value) =>
       assert(processEntity.getAttribute(key) === value)
     }
+  }
+
+  private def getUniqueEntities(entities: Seq[AtlasEntity]): Set[AtlasEntity] = {
+    // same entities must be taken only once, and it is not likely to be done with equals
+    // because pseudo guid is generated per each creation and 'equals' checks this value
+    // so we take 'typeName' and 'qualifiedName' as a unique qualifier
+
+    // (type, qualifier) -> AtlasEntity first occurred
+    val entitiesMap = new scala.collection.mutable.HashMap[(String, String), AtlasEntity]()
+
+    entities.foreach { entity =>
+      val typeName = entity.getTypeName
+      val qualifiedName = getStringAttribute(entity, "qualifiedName")
+      val mapKey = (typeName, qualifiedName)
+      if (!entitiesMap.contains(mapKey)) {
+        entitiesMap.put(mapKey, entity)
+      }
+    }
+
+    entitiesMap.values.toSet
   }
 }

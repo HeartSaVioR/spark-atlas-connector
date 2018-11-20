@@ -144,7 +144,7 @@ class KafkaHarvesterSuite extends StreamTest {
     }
 
     def assertEntitiesKafkaTopicType(topics: Seq[KafkaTopicInformation],
-                                     entities: Seq[AtlasEntity]): Unit = {
+                                     entities: Set[AtlasEntity]): Unit = {
       val kafkaTopicEntities = entities.filter(p => p.getTypeName.equals(KAFKA_TOPIC_STRING))
 
       val expectedTopicNames = topics.map(_.topicName).toSet
@@ -167,7 +167,7 @@ class KafkaHarvesterSuite extends StreamTest {
     def assertEntitySparkProcessType(
         topicsToRead: Seq[KafkaTopicInformation],
         topicToWrite: KafkaTopicInformation,
-        entities: Seq[AtlasEntity],
+        entities: Set[AtlasEntity],
         queryDetail: QueryDetail): Unit = {
       val processEntities = entities.filter { p =>
         p.getTypeName.equals(metadata.PROCESS_TYPE_STRING)
@@ -255,15 +255,47 @@ class KafkaHarvesterSuite extends StreamTest {
       sendMessages(topicsToRead)
       waitForBatchCompleted(query, listener)
 
-      val queryDetail = listener.queryDetails.head
-      val atlasEntities = executeHarvest(queryDetail)
+      import org.scalatest.time.SpanSugar._
+      var queryDetails: Seq[QueryDetail] = null
+      var entitySet: Set[AtlasEntity] = null
+      eventually(timeout(10.seconds)) {
+        queryDetails = listener.queryDetails
 
-      assertEntitiesKafkaTopicType(topicsWithClusterInfo, atlasEntities)
+        val atlasEntities = queryDetails.flatMap(executeHarvest)
+        logInfo(s"Count of created entities (with duplication): ${atlasEntities.size}")
+        entitySet = getUniqueEntities(atlasEntities)
+        logInfo(s"Count of created entities after deduplication: ${entitySet.size}")
+
+        // spark_process, topic to write, topics to read
+        assert(entitySet.size == topicsToRead.size + 2)
+      }
+
+      assertEntitiesKafkaTopicType(topicsWithClusterInfo, entitySet)
       assertEntitySparkProcessType(topicsToReadWithClusterInfo, topicToWriteWithClusterInfo,
-        atlasEntities, queryDetail)
+        entitySet, queryDetails.last)
     } finally {
       query.stop()
     }
+  }
+
+  private def getUniqueEntities(entities: Seq[AtlasEntity]): Set[AtlasEntity] = {
+    // same entities must be taken only once, and it is not likely to be done with equals
+    // because pseudo guid is generated per each creation and 'equals' checks this value
+    // so we take 'typeName' and 'qualifiedName' as a unique qualifier
+
+    // (type, qualifier) -> AtlasEntity first occurred
+    val entitiesMap = new scala.collection.mutable.HashMap[(String, String), AtlasEntity]()
+
+    entities.foreach { entity =>
+      val typeName = entity.getTypeName
+      val qualifiedName = getStringAttribute(entity, "qualifiedName")
+      val mapKey = (typeName, qualifiedName)
+      if (!entitiesMap.contains(mapKey)) {
+        entitiesMap.put(mapKey, entity)
+      }
+    }
+
+    entitiesMap.values.toSet
   }
 
   private class FakeStreamWriter extends StreamWriter {
