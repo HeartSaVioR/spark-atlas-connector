@@ -138,6 +138,15 @@ object internal extends Logging {
     Seq(tblEntity) ++ dbEntities ++ sdEntities ++ schemaEntities
   }
 
+  def sparkTableToEntitiesForAlterTable(
+      tblDefination: CatalogTable,
+      clusterName: String,
+      mockDbDefinition: Option[CatalogDatabase] = None): Seq[AtlasEntity] = {
+    val typesToPick = Seq(metadata.TABLE_TYPE_STRING, metadata.COLUMN_TYPE_STRING)
+    val entities = sparkTableToEntities(tblDefination, clusterName, mockDbDefinition)
+    entities.filter(e => typesToPick.contains(e.getTypeName))
+  }
+
   def sparkProcessUniqueAttribute(executionId: Long): String = {
     SparkUtils.sparkSession.sparkContext.applicationId + "." + executionId
   }

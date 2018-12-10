@@ -251,6 +251,15 @@ object external {
     Seq(tblEntity) ++ dbEntities ++ sdEntities ++ schemaEntities
   }
 
+  def hiveTableToEntitiesForAlterTable(
+      tblDefination: CatalogTable,
+      cluster: String,
+      mockDbDefinition: Option[CatalogDatabase] = None): Seq[AtlasEntity] = {
+    val typesToPick = Seq(HIVE_TABLE_TYPE_STRING, HIVE_COLUMN_TYPE_STRING)
+    val entities = hiveTableToEntities(tblDefination, cluster, mockDbDefinition)
+    entities.filter(e => typesToPick.contains(e.getTypeName))
+  }
+
   // ================== Hive entities (Hive Warehouse Connector) =====================
   val HWC_TABLE_TYPE_STRING = "hive_table"
 
