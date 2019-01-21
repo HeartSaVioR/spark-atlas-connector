@@ -21,6 +21,9 @@ import com.google.common.collect.{ImmutableMap, ImmutableSet}
 import org.apache.atlas.AtlasConstants
 import org.apache.atlas.`type`.AtlasBuiltInTypes.{AtlasBooleanType, AtlasLongType, AtlasStringType}
 import org.apache.atlas.`type`.{AtlasArrayType, AtlasMapType, AtlasTypeUtil}
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.{PropagateTags, RelationshipCategory}
+import org.apache.atlas.model.typedef.AtlasRelationshipEndDef
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef
 
 object metadata {
@@ -29,6 +32,9 @@ object metadata {
   val STORAGEDESC_TYPE_STRING = "spark_storagedesc"
   val COLUMN_TYPE_STRING = "spark_column"
   val TABLE_TYPE_STRING = "spark_table"
+  val SPARK_TABLE_DB_RELATIONSHIP_TYPE_STRING = "spark_table_db_rel"
+  val SPARK_TABLE_COLUMNS_RELATIONSHIP_TYPE_STRING = "spark_table_columns_rel"
+  val SPARK_TABLE_STORAGEDESC_RELATIONSHIP_TYPE_STRING: String = "spark_table_storagedesc_rel"
   val PROCESS_TYPE_STRING = "spark_process"
   val ML_DIRECTORY_TYPE_STRING = "spark_ml_directory"
   val ML_PIPELINE_TYPE_STRING = "spark_ml_pipeline"
@@ -117,6 +123,37 @@ object metadata {
     AtlasTypeUtil.createOptionalAttrDef("comment", new AtlasStringType),
     AtlasTypeUtil.createOptionalAttrDef(
       "unsupportedFeatures", new AtlasArrayType(new AtlasStringType)))
+
+  // ========= Table-related relationship types =========
+  val SPARK_TABLE_DB_RELATIONSHIP_TYPE = AtlasTypeUtil.createRelationshipTypeDef(
+    SPARK_TABLE_DB_RELATIONSHIP_TYPE_STRING,
+    "",
+    METADATA_VERSION,
+    RelationshipCategory.ASSOCIATION,
+    PropagateTags.ONE_TO_TWO,
+    new AtlasRelationshipEndDef(TABLE_TYPE_STRING, "db", Cardinality.SINGLE),
+    new AtlasRelationshipEndDef(DB_TYPE_STRING, "tables", Cardinality.SET)
+  )
+
+  val SPARK_TABLE_COLUMNS_RELATIONSHIP_TYPE = AtlasTypeUtil.createRelationshipTypeDef(
+    SPARK_TABLE_COLUMNS_RELATIONSHIP_TYPE_STRING,
+    "",
+    METADATA_VERSION,
+    RelationshipCategory.ASSOCIATION,
+    PropagateTags.ONE_TO_TWO,
+    new AtlasRelationshipEndDef(TABLE_TYPE_STRING, "spark_schema", Cardinality.SET),
+    new AtlasRelationshipEndDef(COLUMN_TYPE_STRING, "table", Cardinality.SINGLE)
+  )
+
+  val SPARK_TABLE_STORAGEDESC_RELATIONSHIP_TYPE = AtlasTypeUtil.createRelationshipTypeDef(
+    SPARK_TABLE_STORAGEDESC_RELATIONSHIP_TYPE_STRING,
+    "",
+    METADATA_VERSION,
+    RelationshipCategory.ASSOCIATION,
+    PropagateTags.ONE_TO_TWO,
+    new AtlasRelationshipEndDef(TABLE_TYPE_STRING, "sd", Cardinality.SINGLE),
+    new AtlasRelationshipEndDef(STORAGEDESC_TYPE_STRING, "table", Cardinality.SINGLE)
+  )
 
   // ========= Process type =========
   val PROCESS_TYPE = AtlasTypeUtil.createClassTypeDef(

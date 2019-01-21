@@ -134,6 +134,9 @@ object internal extends Logging {
     tableDefinition.comment.foreach(tblEntity.setAttribute("comment", _))
     tblEntity.setAttribute("unsupportedFeatures", tableDefinition.unsupportedFeatures.asJava)
 
+    tblEntity.setRelationshipAttribute("db", AtlasUtils.entityToReference(dbEntities.head))
+    tblEntity.setRelationshipAttribute("sd", AtlasUtils.entityToReference(sdEntities.head))
+
     Seq(tblEntity) ++ dbEntities ++ sdEntities ++ schemaEntities
   }
 

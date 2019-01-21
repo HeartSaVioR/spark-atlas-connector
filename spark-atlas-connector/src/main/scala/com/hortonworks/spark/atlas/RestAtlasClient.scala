@@ -23,7 +23,7 @@ import scala.collection.JavaConverters._
 import com.sun.jersey.core.util.MultivaluedMapImpl
 import org.apache.atlas.AtlasClientV2
 import org.apache.atlas.model.SearchFilter
-import org.apache.atlas.model.instance.AtlasEntity
+import org.apache.atlas.model.instance.{AtlasEntity, AtlasRelationship}
 import org.apache.atlas.model.instance.AtlasEntity.{AtlasEntitiesWithExtInfo, AtlasEntityWithExtInfo}
 import org.apache.atlas.model.typedef.AtlasTypesDef
 import org.apache.atlas.utils.AuthenticationUtil
